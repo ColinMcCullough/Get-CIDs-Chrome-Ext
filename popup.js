@@ -32,7 +32,7 @@ async function matchBrandName(data, key, locationName, locationData, apikey) {
     let found = false;
     let i = 0
     while(!found && i < data.length) {
-        if (locationName == data[i].name) {
+        if(data[i].name.includes(locationName) || locationName.includes(data[i].name)) {
             const cidurl = await placeIDSearch(data[i].place_id,apikey);
             const placeid = cidurl.split("cid=")[1]
             locationData[key]['Google cid'] = `="${placeid}"`
@@ -80,7 +80,8 @@ function buildLocationObjs(locations) {
                 name: location.name,
                 display_phone_number: formatPhoneNum(location.display_phone_number),
                 phone_number: formatPhoneNum(location.phone_number),
-                secondary_listing_category: buildFormattedLising(location.secondary_listing_category)
+                secondary_listing_categories: buildFormattedLising(location.secondary_listing_category),
+                'Google cid': ''
             }
         }
     }
@@ -94,7 +95,7 @@ function buildLocationObjs(locations) {
          str += `"${categories[category]}",`;
      }
      str = str.slice(0, -1);
-     return `{"data"=>[${str}]}`
+     return str.length > 0 ? `{"data"=>[${str}]}` : str
  }
 
  function generateCSV(locationData) {
@@ -122,6 +123,7 @@ function formatPhoneNum(str) {
 
 async function main() {
     $('.btn').button('loading')
+    //const apikey = envconfig.apikey
     const apikey = 'AIzaSyD0qNg1CyA0l4_m_reeJP7JbKPUL5wway4'
     const taburlpromise = await getUrl();
     const url = taburlpromise.url.split('/').pop();
