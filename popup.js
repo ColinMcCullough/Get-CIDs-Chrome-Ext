@@ -122,9 +122,8 @@ function formatPhoneNum(str) {
 
 
 async function main() {
-    $('.btn').button('loading')
-    //const apikey = envconfig.apikey
-    const apikey = 'AIzaSyD0qNg1CyA0l4_m_reeJP7JbKPUL5wway4'
+    $('.btn').button('loading');
+    const apikey = await getPoiKey1();
     const taburlpromise = await getUrl();
     const url = taburlpromise.url.split('/').pop();
     const locationData = await getLocationData(url);
@@ -136,6 +135,14 @@ async function main() {
       });
     $('.btn').button('reset')
 }
+
+function getPoiKey() {
+    return new Promise(resolve => {
+        chrome.storage.sync.get( ['key'],
+          (result) => { resolve(result.key); }
+        );
+    });
+  }
 
 //test with phone number ovverride and no note (error on front end will it work on import)
 //tst with chatmeter paused and no note
