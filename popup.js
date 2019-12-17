@@ -1,5 +1,22 @@
+//Event listener on button to run main()
 document.getElementById('clickme').addEventListener('click', main);
 
+/**
+ * Gets API Key from Chrome Storage
+ * @returns {String} -- API Key
+ */
+function getPoiKey() {
+    return new Promise(resolve => {
+        chrome.storage.sync.get( ['key'],
+          (result) => { resolve(result.key); }
+        );
+    });
+}
+
+/**
+ * Gets current active tab url
+ * @returns {String} - current tab url
+ */
 function getUrl() {
     return new Promise(resolve => {
         chrome.tabs.query(
@@ -7,19 +24,33 @@ function getUrl() {
           (tabs) => { resolve(tabs[0] || null); }
         );
     });
-  }
+}
 
+/**
+ * Places CID's in each locations object
+ * @param {Object} locationData - key >> urn
+ * @param {String} apikey
+ */
 async function getCIDs(locationData,apikey) {
     const locations = Object.keys(locationData)
     for(let i = 0; i < locations.length;i++) {
-        let places = await getPlaces(locationData[locations[i]].lat,locationData[locations[i]].lon,apikey)
-        let locationName = locationData[locations[i]].name
-        let key = locations[i]
+        const places = await getPlaces(locationData[locations[i]].lat,locationData[locations[i]].lon,apikey);
+        const locationName = locationData[locations[i]].name;
+        const key = locations[i];
         console.log(locationName)
-        await matchBrandName(places,key,locationName,locationData,apikey)
+        await matchBrandName(places, key, locationData, apikey);
+        delete locationData[key].lat;
+        delete locationData[key].lon;
     }
 }
 
+/**
+ * Gets Array of Google Place objects near lat,lon passed into function
+ * @param {Number} lat - latitude
+ * @param {Number} lon - longitude
+ * @param {String} apikey
+ * @returns {[Array]} - Array of place objects near the lat lon passed in
+ */
 function getPlaces(lat,lon,apikey) {
     var placesReq = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lon}&rankby=distance&key=${apikey}`
     return fetch(placesReq)
@@ -28,20 +59,34 @@ function getPlaces(lat,lon,apikey) {
         .catch(err => console.log(err.message))
 }
 
-async function matchBrandName(data, key, locationName, locationData, apikey) {
+/**
+ * Updates Google cid property in location Data object 
+ * @param {*} data - Google Places array
+ * @param {*} key - urn of location to match
+ * @param {Object} locationData - locationData object
+ * @param {String} apikey - String
+ */
+async function matchBrandName(data, key, locationData, apikey) {
+    const locationName = locationData[key].name
     let found = false;
     let i = 0
     while(!found && i < data.length) {
         if(data[i].name.includes(locationName) || locationName.includes(data[i].name)) {
             const cidurl = await placeIDSearch(data[i].place_id,apikey);
-            const placeid = cidurl.split("cid=")[1]
-            locationData[key]['Google cid'] = `="${placeid}"`
-            found = true
+            const placeid = cidurl.split("cid=")[1];
+            locationData[key]['Google cid'] = `="${placeid}"`;
+            found = true;
         }
         i++;
     }
 }
 
+/**
+ * Gets Google CID URL
+ * @param {Number} placeid
+ * @param {String} apikey
+ * @returns {String} - cid url
+ */
 async function placeIDSearch(placeid,apikey) {
     const apiurl = `https://maps.googleapis.com/maps/api/place/details/json?placeid=${placeid}&key=${apikey}`;
     return fetch(apiurl)
@@ -53,6 +98,7 @@ async function placeIDSearch(placeid,apikey) {
 /**
 * Gets location object holding keys for each location
 * Each location key holds object with lat,lon, urn properties
+* @param {String} clientId
 * @returns {Object} Location Obj
 */
 async function getLocationData(clientId) {
@@ -86,17 +132,24 @@ function buildLocationObjs(locations) {
         }
     }
     return locobj
- }
-// updated to return nothing if no categories found
- function buildFormattedLising(arr) {
-     let str = ''
-     for(let i = 0; i < arr.length; i++) {
-         const category = arr[i]
-         str += `"${categories[category]}",`;
-     }
-     str = str.slice(0, -1);
-     return str.length > 0 ? `{"data"=>[${str}]}` : str
- }
+}
+
+
+/**
+ *
+ *
+ * @param {[Array]} arr of numbers
+ * @returns
+ */
+function buildFormattedLising(arr) {
+    let str = ''
+    for(let i = 0; i < arr.length; i++) {
+        const category = arr[i]
+        str += `"${categories[category]}",`;
+    }
+    str = str.slice(0, -1);
+    return str.length > 0 ? `{"data"=>[${str}]}` : str
+}
 
  function generateCSV(locationData) {
     const csv = []
@@ -120,30 +173,51 @@ function formatPhoneNum(str) {
     return fullNumber;
 } 
 
-
-async function main() {
-    $('.btn').button('loading');
-    const apikey = await getPoiKey1();
-    const taburlpromise = await getUrl();
-    const url = taburlpromise.url.split('/').pop();
-    const locationData = await getLocationData(url);
-    await getCIDs(locationData,apikey);
-    const csvurl = generateCSV(locationData)
+function downloadCSV(csvurl) {
     chrome.downloads.download({
         url: csvurl,
         filename: 'cids.csv'
-      });
-    $('.btn').button('reset')
+    });
 }
 
-function getPoiKey() {
-    return new Promise(resolve => {
-        chrome.storage.sync.get( ['key'],
-          (result) => { resolve(result.key); }
-        );
-    });
-  }
+/**
+ * Updates button to show loading
+ * Hides alert class
+ */
+function setElementsState() {
+    $('.btn').button('loading');
+    $(".alert").hide()
+}
 
-//test with phone number ovverride and no note (error on front end will it work on import)
-//tst with chatmeter paused and no note
-//test with
+/**
+ * Shows Alert Class with Message passed into function
+ * Resets button status
+ * @param {String} message
+ */
+function updateElementsState(message) {
+    $(".alert").show().text(message)
+    resetbtn();
+}
+
+// Resets button
+function resetbtn() { $('.btn').button('reset') }
+
+/**
+ * Gets from all client locations not deleted and downloads a CSV
+ */
+async function main() {
+    setElementsState()
+    const apikey = await getPoiKey();
+    const taburlpromise = await getUrl();
+    const url = taburlpromise.url.split('/').pop();
+    const locationData = await getLocationData(url);
+    if(locationData) {
+        await getCIDs(locationData,apikey);
+        const csvurl = generateCSV(locationData)
+        downloadCSV(csvurl)
+        updateElementsState('Success! Your csv is available')
+    }
+    else {
+        updateElementsState('Your on the wrong page,\n Re-run from the client overview in the hub.')
+    } 
+}
