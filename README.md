@@ -3,3 +3,5 @@
  the client hub. It finds all locations CIDs that are not deleted and 
  automatically downloads a csv. The csv id formatted to be uploaded directly
  into the client hub via the bulk vsc uploader tool.
+ 
+ Example URL: https://g5-hub.herokuapp.com/admin/clients/g5-c-5dyien9ie-180-self-storage-client
