@@ -1,5 +1,7 @@
 //Event listener on button to run main()
 document.getElementById('clickme').addEventListener('click', main);
+document.getElementById('save').addEventListener('click', saveApiKey);
+chrome.storage.sync.get( ['key'], result => $('#apikeyinput').val(result.key));
 
 /**
  * Gets API Key from Chrome Storage
@@ -10,6 +12,17 @@ function getPoiKey() {
         chrome.storage.sync.get( ['key'],
           (result) => { resolve(result.key); }
         );
+    });
+}
+
+/**
+ * Saves API Key to Chrome Storage
+ * @returns {String} -- API Key
+ */
+function saveApiKey() {
+    const value = $("#apikeyinput").val();
+    chrome.storage.sync.set({key: value}, function() {
+        console.log('Value is set to ' + value);
     });
 }
 
@@ -136,10 +149,9 @@ function buildLocationObjs(locations) {
 
 
 /**
- *
- *
+ * Formates secondary listing as a string
  * @param {[Array]} arr of numbers
- * @returns
+ * @returns {String}
  */
 function buildFormattedLising(arr) {
     let str = ''
@@ -151,7 +163,13 @@ function buildFormattedLising(arr) {
     return str.length > 0 ? `{"data"=>[${str}]}` : str
 }
 
- function generateCSV(locationData) {
+
+/**
+ * Creates CSV
+ * @param {Object} locationData
+ * @returns {String} -csv download url
+ */
+function generateCSV(locationData) {
     const csv = []
     Object.keys(locationData).forEach((key) => {    
         csv.push(locationData[key])
@@ -159,8 +177,14 @@ function buildFormattedLising(arr) {
     const unparsedcsv = Papa.unparse(csv);
     const file = new Blob([unparsedcsv], { type: "text/csv" });
     return URL.createObjectURL(file);
- }
+}
 
+
+/**
+ * Fixes phone number formatting to just numbers and dashes
+ * @param {String} str
+ * @returns {String} - formatted phone #
+ */
 function formatPhoneNum(str) {
     let fullNumber = "";
     str = str.toString().replace(/[^0-9\.]+/g, '').trim();
@@ -173,6 +197,11 @@ function formatPhoneNum(str) {
     return fullNumber;
 } 
 
+
+/**
+ * Downloads csv from URL
+ * @param {String} csvurl
+ */
 function downloadCSV(csvurl) {
     chrome.downloads.download({
         url: csvurl,
@@ -207,7 +236,7 @@ function resetbtn() { $('.btn').button('reset') }
  */
 async function main() {
     setElementsState()
-    const apikey = await getPoiKey();
+    const apikey = $('#apikeyinput').val();
     const taburlpromise = await getUrl();
     const url = taburlpromise.url.split('/').pop();
     const locationData = await getLocationData(url);
@@ -221,3 +250,6 @@ async function main() {
         updateElementsState('Your on the wrong page,\n Re-run from the client overview in the hub.')
     } 
 }
+
+
+
