@@ -214,7 +214,7 @@ function downloadCSV(csvurl) {
  * Hides alert class
  */
 function setElementsState() {
-    $('.btn').button('loading');
+    $('#clickme.btn').button('loading');
     $(".alert").hide()
 }
 
