@@ -3,7 +3,7 @@
 
   "name": "Get All GMB CIDs",
   "description": "Execute script after click in popup.html",
-  "version": "1.9",
+  "version": "1.91",
 
   "icons": {
     "48": "icon.png"

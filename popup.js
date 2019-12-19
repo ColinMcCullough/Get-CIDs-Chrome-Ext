@@ -21,9 +21,15 @@ function getPoiKey() {
  */
 function saveApiKey() {
     const value = $("#apikeyinput").val();
-    chrome.storage.sync.set({key: value}, function() {
-        console.log('Value is set to ' + value);
-    });
+    if(value) {
+        chrome.storage.sync.set({key: value}, function() {
+            console.log('Value is set to ' + value);
+        });
+        updateElementsState('API Key Saved!')
+    }
+    else {
+        updateElementsState('Enter an API Key to save')
+    }
 }
 
 /**
