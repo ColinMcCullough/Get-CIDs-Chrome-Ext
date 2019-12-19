@@ -187,7 +187,7 @@ function generateCSV(locationData) {
  */
 function formatPhoneNum(str) {
     let fullNumber = "";
-    str = str.toString().replace(/[^0-9\.]+/g, '').trim();
+    str = str.toString().replace(/[^0-9]+/g, '').trim();
     if(str != "" || str.length === 10) {
       const areaCode = str.substr(0, 3);
       const first3 = str.substr(3, 3);
@@ -250,6 +250,7 @@ async function main() {
         updateElementsState('Your on the wrong page,\n Re-run from the client overview in the hub.')
     } 
 }
+
 
 
 
